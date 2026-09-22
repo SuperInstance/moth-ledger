@@ -162,7 +162,7 @@ def make_refusal(producer: dict, occurred_at: str, *, reason: str,
 
 def make_finding_v2(producer: dict, occurred_at: str, *,
                     genome_hash: str, dice_seed: int,
-                    walk: Optional[dict] = None,
+                    walk: dict | None = None,
                     **v1_fields) -> dict:
     """A FINDING/v2 cell: v1 envelope + replay binding.
 
@@ -185,7 +185,7 @@ def make_finding_v2(producer: dict, occurred_at: str, *,
 
 
 def make_refusal_v2(producer: dict, occurred_at: str, *,
-                    polarity: str, exercise_id: Optional[str] = None,
+                    polarity: str, exercise_id: str | None = None,
                     **v1_fields) -> dict:
     """A REFUSAL/v2 cell: v1 envelope + polarity testimony.
 

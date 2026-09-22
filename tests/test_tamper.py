@@ -55,10 +55,12 @@ def test_inserted_row_detected(tmp_path):
     forged["id"] = "finding_forged"  # attacker copies the original hashes
     lines.insert(1, json.dumps(forged, sort_keys=True))
     ledger.path.write_text("\n".join(lines) + "\n")
-    ok, errors = ledger.verify_chain()
+    ok, _errors = ledger.verify_chain()
     assert not ok
     # copied hashes fail at the forged row (payload mismatch) and the
     # original row after it (chain mismatch — both honest diagnoses)
+    ok, errors = ledger.verify_chain()
+    assert not ok
     assert any("row_hash mismatch" in e for e in errors)
     assert any("chain_hash mismatch" in e for e in errors)
 

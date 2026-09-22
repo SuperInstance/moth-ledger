@@ -6,8 +6,8 @@ from moth_ledger.q16 import Q16
 from moth_ledger.schema import (
     SchemaError,
     make_finding_v2,
-    make_refusal_v2,
     make_producer,
+    make_refusal_v2,
 )
 
 PRODUCER = make_producer("moth-cells", "0.1.0")
@@ -15,9 +15,11 @@ PRODUCER2 = make_producer("moth-runner", "0.1.0")
 NOW = "2026-09-23T06:00:00Z"
 REPRO = "ab" * 32
 
-V2_FIELDS = dict(target_repo="SuperInstance/demo", target_commit="e95c786",
-                 surface_id="src/parse.c::parse", cwe="CWE-787",
-                 severity=Q16(49152), repro_hash=REPRO)
+V2_FIELDS = {
+    "target_repo": "SuperInstance/demo", "target_commit": "e95c786",
+    "surface_id": "src/parse.c::parse", "cwe": "CWE-787",
+    "severity": Q16(49152), "repro_hash": REPRO,
+}
 
 
 def _ledger(tmp_path):
@@ -31,7 +33,7 @@ def test_finding_v2_roundtrip_and_chain(tmp_path):
                               dice_seed=0xB1, walk={"ticks": 30,
                                                     "terrain_hash": "ff" * 16},
                               **V2_FIELDS)
-    v = lg.append_verdict(PRODUCER2, NOW, finding_id=f2["id"],
+    lg.append_verdict(PRODUCER2, NOW, finding_id=f2["id"],
                           verdict="CONFIRMED")
     r1 = lg.append_refusal(PRODUCER, NOW, reason="budget_exhausted")
     r2 = lg.append_refusal_v2(PRODUCER, NOW, polarity="positive",
@@ -93,9 +95,9 @@ def test_v1_consumers_untouched(tmp_path):
     """Backward compat: v1 rows and v1 filters behave exactly as before."""
     lg = _ledger(tmp_path)
     f = lg.append_finding(PRODUCER, NOW, **V2_FIELDS)
-    r = lg.append_refusal(PRODUCER, NOW, reason="cap_hit")
+    lg.append_refusal(PRODUCER, NOW, reason="cap_hit")
     ok, errors = lg.verify_chain()
     assert ok, errors
-    assert list(lg.findings())[0]["id"] == f["id"]
-    assert list(lg.refusals())[0]["reason"] == "cap_hit"
+    assert next(iter(lg.findings()))["id"] == f["id"]
+    assert next(iter(lg.refusals()))["reason"] == "cap_hit"
     assert lg.summary()["by_kind"] == {"FINDING/v1": 1, "REFUSAL/v1": 1}

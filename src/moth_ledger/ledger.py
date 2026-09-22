@@ -134,17 +134,13 @@ class Ledger:
             raise ChainBroken(-1, "; ".join(errors))
 
     # ------------------------------------------------------------------
-    def rows(self, kind: Optional[str] = None, *, family: Optional[str] = None) -> Iterator[dict]:
+    def rows(self, kind: str | None = None, *, family: str | None = None) -> Iterator[dict]:
         """family="FINDING" matches FINDING/v1 AND FINDING/v2; kind stays
         exact. Filtering by family is how cross-version consumers (bench,
         runner scoring) see a whole lineage without listing versions."""
 
         for row in self._read_rows():
-            if kind is None and family is None:
-                yield row
-            elif kind is not None and row.get("kind") == kind:
-                yield row
-            elif kind is None and family is not None and \
+            if kind is None and family is None or kind is not None and row.get("kind") == kind or kind is None and family is not None and \
                     str(row.get("kind", "")).split("/")[0] == family:
                 yield row
 
