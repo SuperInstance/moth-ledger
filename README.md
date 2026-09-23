@@ -28,6 +28,14 @@ without trusting us.
 | `FINDING/v1` | a hunt claim: target repo/commit/surface, CWE, ℚ₁₆ severity, `repro_hash` binding evidence bytes by sha256 (never copied) |
 | `VERDICT/v1` | status transition: CONFIRMED / REFUTED / DUPLICATE / PENDING |
 | `REFUSAL/v1` | hunt failure: budget exhausted, tool refused, cap hit |
+| `FINDING/v2` | v1 + replay binding: `genome_hash` (16-hex hunter identity), `dice_seed`, optional `walk{ticks,terrain_hash,...}` — a finding you cannot replay is a rumor |
+| `REFUSAL/v2` | v1 + `polarity`: `positive` = restraint (had means, refused: decoy_resisted, window_full) — the honesty signal; `negative` = abstention (lacked means: starvation, dormancy) — capacity testimony, not honesty credit |
+
+v2 envelopes are supersets of v1: every v1 field keeps its name and
+meaning, `verify_chain` is byte-compatible, and v1 producers are
+untouched. Family filters (`findings_all()`, `refusals_all()`,
+`positive_refusals()`) see a whole lineage across versions; exact-kind
+filters (`findings()`, `refusals()`) are unchanged for v1 consumers.
 
 Every row carries: `schema_version`, `kind`, `id`,
 `producer{tool,version}`, `occurred_at` (when the event happened) vs

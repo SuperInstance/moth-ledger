@@ -21,7 +21,9 @@ from .canonical import canonical_dumps
 from .hashes import fnv1a_64_hex
 from .schema import (
     make_finding,
+    make_finding_v2,
     make_refusal,
+    make_refusal_v2,
     make_verdict,
     row_digest,
     validate_core,
@@ -92,6 +94,12 @@ class Ledger:
     def append_refusal(self, producer: dict, occurred_at: str, **fields) -> dict:
         return self.append(make_refusal(producer, occurred_at, **fields))
 
+    def append_finding_v2(self, producer: dict, occurred_at: str, **fields) -> dict:
+        return self.append(make_finding_v2(producer, occurred_at, **fields))
+
+    def append_refusal_v2(self, producer: dict, occurred_at: str, **fields) -> dict:
+        return self.append(make_refusal_v2(producer, occurred_at, **fields))
+
     # ------------------------------------------------------------------
     def verify_chain(self) -> tuple[bool, list[str]]:
         """Re-derive every hash from residue. Returns (ok, errors)."""
@@ -126,25 +134,53 @@ class Ledger:
             raise ChainBroken(-1, "; ".join(errors))
 
     # ------------------------------------------------------------------
-    def rows(self, kind: str | None = None) -> Iterator[dict]:
+    def rows(self, kind: str | None = None, *, family: str | None = None) -> Iterator[dict]:
+        """family="FINDING" matches FINDING/v1 AND FINDING/v2; kind stays
+        exact. Filtering by family is how cross-version consumers (bench,
+        runner scoring) see a whole lineage without listing versions."""
+
         for row in self._read_rows():
-            if kind is None or row.get("kind") == kind:
+            if kind is None and family is None or kind is not None and row.get("kind") == kind or kind is None and family is not None and \
+                    str(row.get("kind", "")).split("/")[0] == family:
                 yield row
 
     def findings(self) -> Iterator[dict]:
         return self.rows("FINDING/v1")
 
+    def findings_v2(self) -> Iterator[dict]:
+        return self.rows("FINDING/v2")
+
+    def findings_all(self) -> Iterator[dict]:
+        return self.rows(family="FINDING")
+
     def refusals(self) -> Iterator[dict]:
         return self.rows("REFUSAL/v1")
+
+    def refusals_v2(self) -> Iterator[dict]:
+        return self.rows("REFUSAL/v2")
+
+    def refusals_all(self) -> Iterator[dict]:
+        return self.rows(family="REFUSAL")
 
     def verdicts(self) -> Iterator[dict]:
         return self.rows("VERDICT/v1")
 
+    def positive_refusals(self) -> Iterator[dict]:
+        """Restraint testimony only — the honesty signal the bench gates
+        on. Negative refusals (starvation, dormancy) are capacity, not
+        honesty; counting them is how a hungry hunter fakes a virtuous one."""
+        for row in self.refusals_all():
+            if row.get("polarity") == "positive":
+                yield row
+
     def status_of(self, finding_id: str) -> str:
-        """Current status = latest verdict on that finding, else its own."""
+        """Current status = latest verdict on that finding, else its own.
+        Matches FINDING/v1 and FINDING/v2 — status is a lineage property,
+        not a version property."""
         status = "PENDING"
         for row in self.rows():
-            if row.get("kind") == "FINDING/v1" and row.get("id") == finding_id:
+            if str(row.get("kind", "")).split("/")[0] == "FINDING" \
+                    and row.get("id") == finding_id:
                 status = row.get("status", "PENDING")
             elif row.get("kind") == "VERDICT/v1" and row.get("finding_id") == finding_id:
                 status = row["verdict"]

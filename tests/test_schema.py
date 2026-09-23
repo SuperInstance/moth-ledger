@@ -20,8 +20,8 @@ def _finding(**over):
     fields = {
         "producer": PRODUCER, "occurred_at": NOW,
         "target_repo": "SuperInstance/moth-ledger", "target_commit": "abc1234",
-        "surface_id": "src/x.c:42", "cwe": "CWE-787", "severity": Q16.from_float(0.75),
-        "repro_hash": REPRO,
+        "surface_id": "src/x.c:42", "cwe": "CWE-787",
+        "severity": Q16.from_float(0.75), "repro_hash": REPRO,
     }
     fields.update(over)
     return make_finding(**fields)
