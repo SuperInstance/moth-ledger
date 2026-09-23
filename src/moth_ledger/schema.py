@@ -25,7 +25,7 @@ from .q16 import Q16
 SCHEMA_VERSION = "1.0"
 VALID_KINDS = ("FINDING/v1", "FINDING/v2", "VERDICT/v1", "VERDICT/v2", "REFUSAL/v1", "REFUSAL/v2", "ROUND_CLOSE/v1")
 VALID_VERDICTS = ("CONFIRMED", "REFUTED", "DUPLICATE", "PENDING")
-VALID_POLARITY = ("POSITIVE", "NEGATIVE", "positive", "negative")
+VALID_POLARITY = ("positive", "negative")
 CLOSE_MODES = ("CAUGHT", "MISSED", "REFUSED")
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
