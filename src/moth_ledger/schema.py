@@ -123,6 +123,7 @@ def make_finding(producer: dict, occurred_at: str, *, target_repo: str,
 
 def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
                  verdict: str, rationale_hash: str | None = None,
+                 causes: list | None = None,
                  recorded_at: str | None = None,
                  row_id: str | None = None) -> dict:
     if verdict not in VALID_VERDICTS:
@@ -132,6 +133,16 @@ def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
     env["verdict"] = verdict
     if rationale_hash is not None:
         env["rationale_hash"] = _require_hash(rationale_hash, "rationale_hash")
+    if causes is not None:
+        # Causality (lane rec 5): order is not causation. A verdict that
+        # overturns a prior verdict says so; impact tracing descends these
+        # edges. Optional and byte-compatible: row_hash binds fields present.
+        if not isinstance(causes, list) or not causes:
+            raise SchemaError("verdict: causes must be a non-empty list of row ids")
+        for cid in causes:
+            if not isinstance(cid, str) or not cid:
+                raise SchemaError(f"verdict: cause id must be non-empty string: {cid!r}")
+        env["causes"] = list(causes)
     return env
 
 

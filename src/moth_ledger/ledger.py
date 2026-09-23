@@ -186,6 +186,33 @@ class Ledger:
                 status = row["verdict"]
         return status
 
+    # ------------------------------------------------------------------
+    # Causality graph (lane recs 4+5): the ledger stays the spine; the
+    # graph is DERIVED on query — git storage, GitHub experience. Edges
+    # come only from explicit `causes` fields; sequence implies nothing.
+
+    def causes_of(self, row_id: str) -> list[str]:
+        for row in self.rows():
+            if row.get("id") == row_id:
+                return list(row.get("causes", []))
+        return []
+
+    def descendants(self, row_id: str) -> list[str]:
+        """All rows that transitively cite row_id as a cause — impact
+        tracing without a graph database."""
+        seen: set[str] = set()
+        frontier = [row_id]
+        while frontier:
+            cur = frontier.pop()
+            for row in self.rows():
+                rid = row.get("id")
+                if rid in seen:
+                    continue
+                if cur in row.get("causes", []):
+                    seen.add(rid)
+                    frontier.append(rid)
+        return sorted(seen)
+
     def summary(self) -> dict:
         counts: dict[str, int] = {}
         for row in self.rows():
