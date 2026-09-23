@@ -23,10 +23,10 @@ from .hashes import fnv1a_64_hex
 from .q16 import Q16
 
 SCHEMA_VERSION = "1.0"
-VALID_KINDS = ("FINDING/v1", "VERDICT/v1", "REFUSAL/v1",
-               "FINDING/v2", "REFUSAL/v2")
+VALID_KINDS = ("FINDING/v1", "FINDING/v2", "VERDICT/v1", "VERDICT/v2", "REFUSAL/v1", "REFUSAL/v2", "ROUND_CLOSE/v1")
 VALID_VERDICTS = ("CONFIRMED", "REFUTED", "DUPLICATE", "PENDING")
 VALID_POLARITY = ("positive", "negative")
+CLOSE_MODES = ("CAUGHT", "MISSED", "REFUSED")
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
 
@@ -138,7 +138,8 @@ def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
 def make_refusal(producer: dict, occurred_at: str, *, reason: str,
                  campaign_id: str | None = None, detail: str | None = None,
                  recorded_at: str | None = None,
-                 row_id: str | None = None) -> dict:
+                 row_id: str | None = None,
+                 extra: dict | None = None) -> dict:
     """A REFUSAL/v1 cell — preserved forever, never deleted, never mutated."""
     env = _base_envelope("REFUSAL/v1", producer, occurred_at, recorded_at, row_id)
     env["reason"] = _require_str({"reason": reason}, "reason", "refusal")
@@ -146,6 +147,35 @@ def make_refusal(producer: dict, occurred_at: str, *, reason: str,
         env["campaign_id"] = campaign_id
     if detail is not None:
         env["detail"] = detail
+    if extra:
+        env["context"] = dict(extra)
+    return env
+
+
+def make_round_close(producer: dict, occurred_at: str, *, round_id: str,
+                     closes: list, recorded_at: str | None = None,
+                     row_id: str | None = None) -> dict:
+    """A ROUND_CLOSE/v1 cell — the trial balance, booked exactly once.
+
+    closes is the per-expectation account table from trial_balance.book_round:
+    [{"expectation_id": ..., "close": CAUGHT|MISSED|REFUSED, "debits": n,
+      "credits": n}, ...]. Writing this row is the only legal way to close
+    a round; the balance is re-derivable from the rows beneath it, so a
+    gamed close is itself a receipted lie.
+    """
+    env = _base_envelope("ROUND_CLOSE/v1", producer, occurred_at, recorded_at, row_id)
+    env["round_id"] = _require_str({"round_id": round_id}, "round_id", "round_close")
+    if not isinstance(closes, list) or not closes:
+        raise SchemaError("round_close: closes must be a non-empty list")
+    for entry in closes:
+        if not isinstance(entry, dict):
+            raise SchemaError("round_close: each close entry must be an object")
+        _require_str(entry, "expectation_id", "round_close.closes")
+        if entry.get("close") not in CLOSE_MODES:
+            raise SchemaError(
+                f"round_close: close must be one of {CLOSE_MODES}"
+            )
+    env["closes"] = [dict(c) for c in closes]
     return env
 
 
