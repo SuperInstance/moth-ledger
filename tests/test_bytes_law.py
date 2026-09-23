@@ -7,14 +7,14 @@ def test_pinned_vectors():
 
 
 def test_cafe_delta_nihongo_pin():
-    raw = "café Δ 日本語".encode("utf-8")
+    raw = "café Δ 日本語".encode()
     assert fnv1a_64(raw) == 0x024A555471370B18D
     assert fnv1a_64_hex(raw) == "24a555471370b18d"
 
 
 def test_bytes_not_characters():
     # Hashing the str's code points would give a different value.
-    raw = "café".encode("utf-8")
+    raw = "café".encode()
     assert fnv1a_64(raw) != fnv1a_64("café".encode("utf-16-le"))
 
 

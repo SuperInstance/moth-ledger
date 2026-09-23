@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from moth_ledger import ChainBroken, Ledger, Q16, make_producer, sha256_hex
+from moth_ledger import Q16, ChainBroken, Ledger, make_producer, sha256_hex
 
 PRODUCER = make_producer("moth-runner", "0.1.0")
 NOW = "2026-09-23T04:30:00Z"
@@ -44,7 +44,7 @@ def test_flip_stored_hash_detected(tmp_path):
     row["row_hash"] = "0" * 16
     lines[0] = json.dumps(row, sort_keys=True)
     ledger.path.write_text("\n".join(lines) + "\n")
-    ok, errors = ledger.verify_chain()
+    ok, _errors = ledger.verify_chain()
     assert not ok
 
 
@@ -68,7 +68,7 @@ def test_reorder_detected(tmp_path):
     lines = _lines(ledger.path)
     lines.reverse()
     ledger.path.write_text("\n".join(lines) + "\n")
-    ok, errors = ledger.verify_chain()
+    ok, _errors = ledger.verify_chain()
     assert not ok
 
 

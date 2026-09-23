@@ -14,13 +14,12 @@ payload hashes from retained residue, it does not trust stored ones.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional
 
 from .canonical import canonical_dumps
-from .hashes import MASK64, fnv1a_64, fnv1a_64_hex
+from .hashes import fnv1a_64_hex
 from .schema import (
-    SchemaError,
     make_finding,
     make_refusal,
     make_verdict,
@@ -127,7 +126,7 @@ class Ledger:
             raise ChainBroken(-1, "; ".join(errors))
 
     # ------------------------------------------------------------------
-    def rows(self, kind: Optional[str] = None) -> Iterator[dict]:
+    def rows(self, kind: str | None = None) -> Iterator[dict]:
         for row in self._read_rows():
             if kind is None or row.get("kind") == kind:
                 yield row

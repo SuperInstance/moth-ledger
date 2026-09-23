@@ -3,8 +3,8 @@ import json
 
 from moth_ledger import (
     GENESIS,
-    Ledger,
     Q16,
+    Ledger,
     make_producer,
     sha256_hex,
 )

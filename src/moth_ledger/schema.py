@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from .canonical import canonical_dumps
 from .hashes import fnv1a_64_hex
@@ -61,7 +61,7 @@ def make_producer(tool: str, version: str) -> dict:
 
 
 def _base_envelope(kind: str, producer: dict, occurred_at: str,
-                   recorded_at: Optional[str], row_id: Optional[str]) -> dict:
+                   recorded_at: str | None, row_id: str | None) -> dict:
     if kind not in VALID_KINDS:
         raise SchemaError(f"unknown kind: {kind!r}")
     prefix = kind.split("/", 1)[0].lower()
@@ -96,9 +96,9 @@ def validate_core(env: dict) -> None:
 def make_finding(producer: dict, occurred_at: str, *, target_repo: str,
                  target_commit: str, surface_id: str, cwe: str,
                  severity: Q16, repro_hash: str,
-                 recorded_at: Optional[str] = None,
-                 row_id: Optional[str] = None,
-                 extra: Optional[dict] = None) -> dict:
+                 recorded_at: str | None = None,
+                 row_id: str | None = None,
+                 extra: dict | None = None) -> dict:
     """A FINDING/v1 cell. severity is ℚ₁₆ exact; repro_hash binds evidence
     by hash — evidence bytes are never copied into the ledger."""
     if not isinstance(severity, Q16):
@@ -120,9 +120,9 @@ def make_finding(producer: dict, occurred_at: str, *, target_repo: str,
 
 
 def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
-                 verdict: str, rationale_hash: Optional[str] = None,
-                 recorded_at: Optional[str] = None,
-                 row_id: Optional[str] = None) -> dict:
+                 verdict: str, rationale_hash: str | None = None,
+                 recorded_at: str | None = None,
+                 row_id: str | None = None) -> dict:
     if verdict not in VALID_VERDICTS:
         raise SchemaError(f"verdict must be one of {VALID_VERDICTS}")
     env = _base_envelope("VERDICT/v1", producer, occurred_at, recorded_at, row_id)
@@ -134,9 +134,9 @@ def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
 
 
 def make_refusal(producer: dict, occurred_at: str, *, reason: str,
-                 campaign_id: Optional[str] = None, detail: Optional[str] = None,
-                 recorded_at: Optional[str] = None,
-                 row_id: Optional[str] = None) -> dict:
+                 campaign_id: str | None = None, detail: str | None = None,
+                 recorded_at: str | None = None,
+                 row_id: str | None = None) -> dict:
     """A REFUSAL/v1 cell — preserved forever, never deleted, never mutated."""
     env = _base_envelope("REFUSAL/v1", producer, occurred_at, recorded_at, row_id)
     env["reason"] = _require_str({"reason": reason}, "reason", "refusal")

@@ -8,7 +8,6 @@ Greek Delta, and the CJK run exist to catch engines that hash code points.
 from __future__ import annotations
 
 import hashlib
-from typing import Union
 
 FNV1A64_OFFSET = 0xCBF29CE484222325
 FNV1A64_PRIME = 0x100000001B3
@@ -20,13 +19,13 @@ PINNED_VECTORS = [
     # JEV-SPEC bytes-law pin. Integer-equal to the spec's 0x024a555471370b18d
     # (memory recorded a spurious leading zero; integers compare equal —
     # canonical string form here is the 64-bit zero-padded 16-digit form).
-    ("café Δ 日本語".encode("utf-8"), 0x24A555471370B18D),
+    ("café Δ 日本語".encode(), 0x24A555471370B18D),
     (b"a", 0xAF63DC4C8601EC8C),
     (b"hello", 0xA430D84680Aabd0B),
 ]
 
 
-def fnv1a_64(data: Union[bytes, bytearray, memoryview]) -> int:
+def fnv1a_64(data: bytes | bytearray | memoryview) -> int:
     """FNV-1a 64-bit hash over raw bytes."""
     h = FNV1A64_OFFSET
     for byte in bytes(data):
@@ -35,7 +34,7 @@ def fnv1a_64(data: Union[bytes, bytearray, memoryview]) -> int:
     return h
 
 
-def fnv1a_64_hex(data: Union[bytes, bytearray, memoryview]) -> str:
+def fnv1a_64_hex(data: bytes | bytearray | memoryview) -> str:
     return f"{fnv1a_64(data):016x}"
 
 
