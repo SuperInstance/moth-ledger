@@ -17,12 +17,12 @@ REPRO = sha256_hex(b"repro bytes")
 
 
 def _finding(**over):
-    fields = dict(
-        producer=PRODUCER, occurred_at=NOW,
-        target_repo="SuperInstance/moth-ledger", target_commit="abc1234",
-        surface_id="src/x.c:42", cwe="CWE-787", severity=Q16.from_float(0.75),
-        repro_hash=REPRO,
-    )
+    fields = {
+        "producer": PRODUCER, "occurred_at": NOW,
+        "target_repo": "SuperInstance/moth-ledger", "target_commit": "abc1234",
+        "surface_id": "src/x.c:42", "cwe": "CWE-787", "severity": Q16.from_float(0.75),
+        "repro_hash": REPRO,
+    }
     fields.update(over)
     return make_finding(**fields)
 

@@ -12,7 +12,7 @@ from .ledger import ChainBroken, Ledger
 def cmd_init(args: argparse.Namespace) -> int:
     ledger = Ledger(args.ledger)
     ledger.path.touch(exist_ok=True)
-    ok, errors = ledger.verify_chain()
+    ok, _errors = ledger.verify_chain()
     print(f"initialized {ledger.path} (valid={ok})")
     return 0
 

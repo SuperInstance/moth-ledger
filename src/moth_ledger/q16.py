@@ -30,7 +30,7 @@ class Q16:
         self._num = num
 
     @classmethod
-    def from_float(cls, x: float) -> "Q16":
+    def from_float(cls, x: float) -> Q16:
         frac = Fraction(x)  # exact binary fraction
         scaled = frac * DENOMINATOR
         if scaled.denominator != 1:
@@ -40,7 +40,7 @@ class Q16:
         return cls(int(scaled))
 
     @classmethod
-    def from_parts(cls, num: int, den: int) -> "Q16":
+    def from_parts(cls, num: int, den: int) -> Q16:
         if den <= 0:
             raise Q16Refusal("denominator must be positive")
         scaled_num = num * DENOMINATOR
@@ -60,34 +60,34 @@ class Q16:
         return {"num": str(self._num), "den": str(DENOMINATOR)}
 
     @classmethod
-    def from_json(cls, obj: dict) -> "Q16":
+    def from_json(cls, obj: dict) -> Q16:
         if set(obj.keys()) != {"num", "den"}:
             raise Q16Refusal("Q16 json must have exactly {num, den}")
         if obj["den"] != str(DENOMINATOR):
             raise Q16Refusal(f"Q16 denominator must be {DENOMINATOR}")
         return cls(int(obj["num"]))
 
-    def _coerce(self, other: "Q16") -> "Q16":
+    def _coerce(self, other: Q16) -> Q16:
         if not isinstance(other, Q16):
             raise Q16Refusal(f"expected Q16, got {type(other).__name__}")
         return other
 
-    def __add__(self, other: "Q16") -> "Q16":
+    def __add__(self, other: Q16) -> Q16:
         other = self._coerce(other)
         return Q16(self._num + other._num)
 
-    def __sub__(self, other: "Q16") -> "Q16":
+    def __sub__(self, other: Q16) -> Q16:
         other = self._coerce(other)
         return Q16(self._num - other._num)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Q16) and self._num == other._num
 
-    def __lt__(self, other: "Q16") -> bool:
+    def __lt__(self, other: Q16) -> bool:
         other = self._coerce(other)
         return self._num < other._num
 
-    def __le__(self, other: "Q16") -> bool:
+    def __le__(self, other: Q16) -> bool:
         other = self._coerce(other)
         return self._num <= other._num
 
