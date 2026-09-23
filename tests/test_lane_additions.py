@@ -13,8 +13,8 @@ REPRO = "a" * 64
 
 
 def _finding_kwargs():
-    return dict(target_repo="o/r", target_commit="b" * 40, surface_id="s1",
-                cwe="CWE-20", severity=Q16.from_parts(1, 2), repro_hash=REPRO)
+    return {"target_repo": "o/r", "target_commit": "b" * 40, "surface_id": "s1",
+                "cwe": "CWE-20", "severity": Q16.from_parts(1, 2), "repro_hash": REPRO}
 
 
 def test_mac_sign_and_verify():
