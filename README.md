@@ -28,14 +28,7 @@ without trusting us.
 | `FINDING/v1` | a hunt claim: target repo/commit/surface, CWE, ℚ₁₆ severity, `repro_hash` binding evidence bytes by sha256 (never copied) |
 | `VERDICT/v1` | status transition: CONFIRMED / REFUTED / DUPLICATE / PENDING |
 | `REFUSAL/v1` | hunt failure: budget exhausted, tool refused, cap hit |
-| `FINDING/v2` | v1 + replay binding: `genome_hash` (16-hex hunter identity), `dice_seed`, optional `walk{ticks,terrain_hash,...}` — a finding you cannot replay is a rumor |
-| `REFUSAL/v2` | v1 + `polarity`: `positive` = restraint (had means, refused: decoy_resisted, window_full) — the honesty signal; `negative` = abstention (lacked means: starvation, dormancy) — capacity testimony, not honesty credit |
-
-v2 envelopes are supersets of v1: every v1 field keeps its name and
-meaning, `verify_chain` is byte-compatible, and v1 producers are
-untouched. Family filters (`findings_all()`, `refusals_all()`,
-`positive_refusals()`) see a whole lineage across versions; exact-kind
-filters (`findings()`, `refusals()`) are unchanged for v1 consumers.
+| `ROUND_CLOSE/v1` | the round's trial balance, booked exactly once (see below) |
 
 Every row carries: `schema_version`, `kind`, `id`,
 `producer{tool,version}`, `occurred_at` (when the event happened) vs
@@ -85,6 +78,41 @@ moth-ledger init campaign.jsonl
 moth-ledger verify campaign.jsonl           # exit 1 + BROKEN lines on tamper
 moth-ledger show campaign.jsonl [--kind FINDING/v1]
 ```
+
+## Trial balance — every account closes exactly once
+
+A round of planted ground truth is a set of accounts (Pacioli canary).
+Each expectation closes exactly once, as exactly one of:
+
+- **CAUGHT** — a `FINDING/v1` debit naming `context.expectation_id`,
+  closed by a CONFIRMED verdict (the credit);
+- **MISSED** — no catch; the books admit it with one credit row
+  (`REFUSAL/v1`, `context.close = "MISSED"`);
+- **REFUSED** — no catch claimed, restraint claimed instead: one credit
+  row (`context.close = "REFUSED"`), preserved forever like every refusal.
+
+UNCLOSED, DOUBLE_DEBIT, DOUBLE_CREDIT, and UNCLOSED_DEBIT (a finding
+without its CONFIRMED verdict) are all imbalances — `close_round` raises
+`TrialImbalance` and writes nothing. A balanced round gets one
+`ROUND_CLOSE/v1` row, hash-chained like everything else;
+`verify_close` then re-derives the balance from the rows beneath it, so
+even a forger who re-chains every hash after rewriting the MISSED row
+is caught: the close claims MISSED, the residue says REFUSED.
+
+Imbalance at round close IS the gamed-evaluator signal. The honest
+close and the honest miss cost the same ink; a book that will not
+balance was a choice.
+
+```python
+from moth_ledger import close_round, make_producer, verify_close
+
+row = close_round(ledger, producer, "2026-09-23T05:40:00Z",
+                  round_id="round-1", expectations=["exp_alpha", "exp_beta"])
+ok, errors = verify_close(ledger, row)
+```
+
+CLI: `moth-ledger balance LEDGER --expectations a,b,c [--close --round-id r]
+[--verify-close-id ROW_ID]`.
 
 ## Status — honest
 
