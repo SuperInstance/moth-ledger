@@ -6,7 +6,6 @@ from moth_ledger.hashes import assert_pins
 from moth_ledger.ledger import Ledger
 from moth_ledger.merkle import inclusion_proof, merkle_root, verify_proof
 from moth_ledger.q16 import Q16
-from moth_ledger.schema import make_producer
 
 PROD = {"tool": "lane-test", "version": "0.1"}
 NOW = "2026-09-24T04:20:00Z"
@@ -56,7 +55,7 @@ def test_causes_edges_and_descendants():
 
 
 def test_causes_validation():
-    from moth_ledger.schema import make_verdict, SchemaError
+    from moth_ledger.schema import SchemaError, make_verdict
     with pytest.raises(SchemaError):
         make_verdict(PROD, NOW, finding_id="f_1", verdict="PENDING", causes=[])
 
