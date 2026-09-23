@@ -25,6 +25,7 @@ from .q16 import Q16
 SCHEMA_VERSION = "1.0"
 VALID_KINDS = ("FINDING/v1", "VERDICT/v1", "REFUSAL/v1", "ROUND_CLOSE/v1")
 VALID_VERDICTS = ("CONFIRMED", "REFUTED", "DUPLICATE", "PENDING")
+VALID_POLARITY = ("POSITIVE", "NEGATIVE")
 CLOSE_MODES = ("CAUGHT", "MISSED", "REFUSED")
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
@@ -135,10 +136,10 @@ def make_verdict(producer: dict, occurred_at: str, *, finding_id: str,
 
 
 def make_refusal(producer: dict, occurred_at: str, *, reason: str,
-                 campaign_id: Optional[str] = None, detail: Optional[str] = None,
-                 recorded_at: Optional[str] = None,
-                 row_id: Optional[str] = None,
-                 extra: Optional[dict] = None) -> dict:
+                 campaign_id: str | None = None, detail: str | None = None,
+                 recorded_at: str | None = None,
+                 row_id: str | None = None,
+                 extra: dict | None = None) -> dict:
     """A REFUSAL/v1 cell — preserved forever, never deleted, never mutated."""
     env = _base_envelope("REFUSAL/v1", producer, occurred_at, recorded_at, row_id)
     env["reason"] = _require_str({"reason": reason}, "reason", "refusal")
@@ -152,8 +153,8 @@ def make_refusal(producer: dict, occurred_at: str, *, reason: str,
 
 
 def make_round_close(producer: dict, occurred_at: str, *, round_id: str,
-                     closes: list, recorded_at: Optional[str] = None,
-                     row_id: Optional[str] = None) -> dict:
+                     closes: list, recorded_at: str | None = None,
+                     row_id: str | None = None) -> dict:
     """A ROUND_CLOSE/v1 cell — the trial balance, booked exactly once.
 
     closes is the per-expectation account table from trial_balance.book_round:

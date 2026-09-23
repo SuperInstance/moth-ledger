@@ -26,7 +26,7 @@ the round claims to be auditing.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from .canonical import canonical_equal
 from .ledger import Ledger, LedgerError
@@ -37,7 +37,7 @@ class TrialImbalance(LedgerError):
     """The books do not balance; carries the list of violations."""
 
 
-def _expectation_id(row: dict) -> Optional[str]:
+def _expectation_id(row: dict) -> str | None:
     ctx = row.get("context")
     if isinstance(ctx, dict):
         exp = ctx.get("expectation_id")

@@ -9,10 +9,10 @@ from .ledger import GENESIS, ChainBroken, Ledger, LedgerError
 from .q16 import DENOMINATOR as Q16_DENOMINATOR
 from .q16 import Q16, Q16Refusal
 from .schema import (
+    CLOSE_MODES,
     SCHEMA_VERSION,
     VALID_KINDS,
     VALID_VERDICTS,
-    CLOSE_MODES,
     SchemaError,
     make_finding,
     make_producer,
@@ -27,16 +27,12 @@ from .trial_balance import TrialImbalance, book_round, close_round, verify_close
 __version__ = "0.1.0"
 
 __all__ = [
-    "CanonicalError",
-    "ChainBroken",
     "CLOSE_MODES",
     "GENESIS",
     "PINNED_VECTORS",
     "Q16",
     "Q16_DENOMINATOR",
     "SCHEMA_VERSION",
-    "SchemaError",
-    "TrialImbalance",
     "VALID_KINDS",
     "VALID_VERDICTS",
     "CanonicalError",
@@ -45,6 +41,7 @@ __all__ = [
     "LedgerError",
     "Q16Refusal",
     "SchemaError",
+    "TrialImbalance",
     "__version__",
     "assert_pins",
     "book_round",
