@@ -23,8 +23,10 @@ from .hashes import fnv1a_64_hex
 from .q16 import Q16
 
 SCHEMA_VERSION = "1.0"
-VALID_KINDS = ("FINDING/v1", "VERDICT/v1", "REFUSAL/v1")
+VALID_KINDS = ("FINDING/v1", "VERDICT/v1", "REFUSAL/v1",
+               "FINDING/v2", "REFUSAL/v2")
 VALID_VERDICTS = ("CONFIRMED", "REFUTED", "DUPLICATE", "PENDING")
+VALID_POLARITY = ("positive", "negative")
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
 
@@ -145,6 +147,100 @@ def make_refusal(producer: dict, occurred_at: str, *, reason: str,
     if detail is not None:
         env["detail"] = detail
     return env
+
+
+# ---------------------------------------------------------------- v2
+# Contract gaps surfaced by the cellular ideator (B) and closed here:
+#   #2  FINDING rows need genome_hash + dice_seed slots for replayable
+#       evolution — a finding you cannot replay is a rumor.
+#   #7  REFUSAL rows need a polarity field — silence and restraint are
+#       not the same testimony.
+# v2 envelopes are SUPERSETS of v1: every v1 field keeps its name and
+# meaning; verify_chain is byte-compatible (canonical binds every field
+# present). v1 producers keep working untouched.
+
+
+def make_finding_v2(producer: dict, occurred_at: str, *,
+                    genome_hash: str, dice_seed: int,
+                    walk: Optional[dict] = None,
+                    **v1_fields) -> dict:
+    """A FINDING/v2 cell: v1 envelope + replay binding.
+
+    genome_hash: 16-hex identity of the hunter genome that produced the
+    finding (floats never touch identity — the genome is named by hash).
+    dice_seed: the deterministic seed the walk was driven with; together
+    with walk context {ticks, start_pos, terrain_hash} the finding is
+    re-executable: re-run the kernel, re-derive the claim, compare.
+    A finding you cannot replay is a rumor."""
+    env = make_finding(producer, occurred_at, **v1_fields)
+    env["kind"] = "FINDING/v2"
+    env["genome_hash"] = _require_genome_hash(genome_hash)
+    env["dice_seed"] = _require_dice_seed(dice_seed)
+    if walk is not None:
+        if not isinstance(walk, dict):
+            raise SchemaError("finding_v2: walk must be an object")
+        env["walk"] = dict(walk)
+    validate_finding_v2(env)
+    return env
+
+
+def make_refusal_v2(producer: dict, occurred_at: str, *,
+                    polarity: str, exercise_id: Optional[str] = None,
+                    **v1_fields) -> dict:
+    """A REFUSAL/v2 cell: v1 envelope + polarity testimony.
+
+    polarity = why the refusal happened:
+      positive — restraint: the hunter HAD the means and refused to act
+                 (decoy_resisted, low_confidence_suppressed, window_full).
+                 Positive refusals are the honesty signal the bench gates
+                 on: decoys_resisted counts nothing but these.
+      negative — abstention: the hunter LACKED the means (starvation,
+                 no_energy, dormancy, budget_exhausted). Negative
+                 refusals are capacity testimony, not honesty credit.
+    Confusing them inflates an honest-hunter metric with a hungry one."""
+    if polarity not in VALID_POLARITY:
+        raise SchemaError(
+            f"polarity must be one of {VALID_POLARITY}: {polarity!r}")
+    env = make_refusal(producer, occurred_at, **v1_fields)
+    env["kind"] = "REFUSAL/v2"
+    env["polarity"] = polarity
+    if exercise_id is not None:
+        env["exercise_id"] = exercise_id
+    validate_refusal_v2(env)
+    return env
+
+
+def validate_finding_v2(row: dict) -> None:
+    validate_finding(row)  # v1 contract first: target/cwe/severity/repro
+    if row.get("kind") != "FINDING/v2":
+        raise SchemaError("finding_v2: kind must be FINDING/v2")
+    _require_genome_hash(row.get("genome_hash"))
+    _require_dice_seed(row.get("dice_seed"))
+    walk = row.get("walk")
+    if walk is not None and not isinstance(walk, dict):
+        raise SchemaError("finding_v2: walk must be an object")
+
+
+def validate_refusal_v2(row: dict) -> None:
+    validate_core(row)
+    if row.get("kind") != "REFUSAL/v2":
+        raise SchemaError("refusal_v2: kind must be REFUSAL/v2")
+    _require_str(row, "reason", "refusal_v2")
+    if row.get("polarity") not in VALID_POLARITY:
+        raise SchemaError(
+            f"refusal_v2: polarity must be one of {VALID_POLARITY}")
+
+
+def _require_genome_hash(value: Any) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{16}", value):
+        raise SchemaError(f"genome_hash must be 16-hex: {value!r}")
+    return value
+
+
+def _require_dice_seed(value: Any) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise SchemaError(f"dice_seed must be a non-negative int: {value!r}")
+    return value
 
 
 def validate_finding(row: dict) -> None:
